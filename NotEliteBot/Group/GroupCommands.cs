@@ -39,7 +39,7 @@ namespace NotEliteBot
                     {
                         if (ctx.Update.Message.From.Id == Memory.ElimpLeader.CurrentLeader && Memory.ElimpLeader.LeaderMsg == "отсутствует" && !string.IsNullOrEmpty((string)ctx.Args[0]))
                         {
-                            Memory.ElimpLeader.LeaderMsg = $"\n\n«{(string)ctx.Args[0]}»";
+                            Memory.ElimpLeader.LeaderMsg = $"\n\n«{(string)ctx.Args[0]}»".Replace("@", "");
                             await ctx.Bot.SendTextMessageAsync(
                             ctx.Update.Message.Chat.Id,
                             $"Девиз добавлен",
@@ -111,7 +111,7 @@ namespace NotEliteBot
                         var arg = (string)ctx.Args[0];
                         Memory.ElimpLeader.LeaderMsg = string.IsNullOrEmpty(arg)
                             ? "отсутствует"
-                            : $"\n\n«{arg}»";
+                            : $"\n\n«{arg}»".Replace("@", "");
                         await ctx.Bot.SendTextMessageAsync(
                             ctx.Update.Message.Chat.Id,
                             $"Гора Элимп покорена!\n\n" +

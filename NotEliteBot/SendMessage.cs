@@ -33,26 +33,35 @@ namespace NotEliteBot
             IReplyMarkup? replyMarkup = null,
             ParseMode? parseMode = null)
         {
-            var msg = await bot.SendTextMessageAsync(
-                chatId,
-                text,
-                replyToMessageId: replyToMessageId,
-                parseMode: parseMode,
-                replyMarkup: replyMarkup
-            );
-
-            // если -1 → не добавляем вообще
-            if (ttlMessages >= 0)
+            try
             {
-                Messages.Add(new InternalMessage
-                {
-                    ChatId = chatId,
-                    MessageId = msg.MessageId,
-                    RemainingMessages = ttlMessages
-                });
-            }
+                var msg = await bot.SendTextMessageAsync(
+                    chatId,
+                    text,
+                    replyToMessageId: replyToMessageId,
+                    parseMode: parseMode,
+                    replyMarkup: replyMarkup
+                );
 
-            return msg;
+                // если -1 → не добавляем вообще
+                if (ttlMessages >= 0)
+                {
+                    Messages.Add(new InternalMessage
+                    {
+                        ChatId = chatId,
+                        MessageId = msg.MessageId,
+                        RemainingMessages = ttlMessages
+                    });
+                }
+
+                return msg;
+
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Ошибка при отправке сообщения: " + ex.Message, Debug.LogLevel.Error);
+                return new Message();
+            }
         }
 
         // --- тик при каждом апдейте ---

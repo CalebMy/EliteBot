@@ -76,9 +76,9 @@ namespace NotEliteBot
             if (msg == null) return;
 
             var chatType = msg.Chat.Type;
-            await MessageManager.Tick(botClient, update);
             try
             {
+                await MessageManager.Tick(botClient, update);
                 string key = $"primary-cooldown_{msg.From.Id}_{msg.Chat.Id}";
                 if (!Commander.Cooldowns.TryUse(key, TimeSpan.FromMilliseconds(500), out var remaining))
                 {

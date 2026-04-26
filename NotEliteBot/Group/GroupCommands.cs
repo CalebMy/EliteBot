@@ -31,6 +31,7 @@ namespace NotEliteBot
                 Arguments = new() { new ArgumentDefinition { Type = ArgumentType.Rest, Optional = true } },
                 Execute = async ctx =>
                 {
+                    MessageManager.AddMessage(ctx.Update.Message.Chat.Id, ctx.Update.Message.MessageId, 3);
                     Random rnd = new();
                     string key1 = $"elimp_global";
                     TimeSpan remaining;

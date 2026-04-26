@@ -100,5 +100,17 @@ namespace NotEliteBot
                 Messages.Remove(m);
             }
         }
+        public static void AddMessage(long chatId, int messageId, int ttlMessages)
+        {
+            if (ttlMessages >= 0)
+            {
+                Messages.Add(new InternalMessage
+                {
+                    ChatId = chatId,
+                    MessageId = messageId,
+                    RemainingMessages = ttlMessages
+                });
+            }
+        }
     }
 }

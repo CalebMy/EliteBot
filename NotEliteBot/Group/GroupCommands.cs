@@ -40,9 +40,11 @@ namespace NotEliteBot
                         if (ctx.Update.Message.From.Id == Memory.ElimpLeader.CurrentLeader && Memory.ElimpLeader.LeaderMsg == "отсутствует" && !string.IsNullOrEmpty((string)ctx.Args[0]))
                         {
                             Memory.ElimpLeader.LeaderMsg = $"\n\n«{(string)ctx.Args[0]}»".Replace("@", "");
-                            await ctx.Bot.SendTextMessageAsync(
+                            await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Девиз добавлен",
+                            5,
                             replyToMessageId: ctx.Update.Message.MessageId
                             );
                             Memory.SaveAll();
@@ -50,15 +52,17 @@ namespace NotEliteBot
                         }
                         var leaderInfo = await ctx.Bot.GetChatMemberAsync(Memory.ElimpLeader.LeaderChat, Memory.ElimpLeader.CurrentLeader);
                         var leaderChatInfo = await ctx.Bot.GetChatAsync(Memory.ElimpLeader.LeaderChat);
-                        await ctx.Bot.SendTextMessageAsync(
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Гора Элимп уже покорена\n\n" +
                             $"Текущий лидер: {leaderInfo.User.FirstName} {leaderInfo.User.LastName}\n" +
                             $"Флаг чата: {leaderChatInfo.Title}\n" +
                             $"Девиз лидера: {Memory.ElimpLeader.LeaderMsg}\n\n" +
                             $"Гора опустеет через: {remaining.Hours}ч. {remaining.Minutes}м. {remaining.Seconds}c.",
+                            5,
                             replyToMessageId: ctx.Update.Message.MessageId
-                        );
+                            );
                         return;
                     }
                     else if (Memory.ElimpLeader.CurrentLeader != 0 && !isOnCooldown)
@@ -74,7 +78,7 @@ namespace NotEliteBot
                         long currentChatId = ctx.Update.Message.Chat.Id;
 
                         // отправка в текущий чат
-                        await ctx.Bot.SendTextMessageAsync(currentChatId, text);
+                        await MessageManager.SendAsync(ctx.Bot, currentChatId, text, -1);
 
                         // отправка в остальные
                         foreach (var chatId in NotifyChats)
@@ -84,7 +88,7 @@ namespace NotEliteBot
 
                             try
                             {
-                                await ctx.Bot.SendTextMessageAsync(chatId, text);
+                                  await MessageManager.SendAsync(ctx.Bot, chatId, text, -1);
                             }
                             catch
                             {
@@ -97,9 +101,11 @@ namespace NotEliteBot
                     string key2 = $"elimptry_user_{ctx.Update.Message.From.Id}";
                     if (!Commander.Cooldowns.TryUse(key2, TimeSpan.FromSeconds(10), out remaining))
                     {
-                        await ctx.Bot.SendTextMessageAsync(
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Ты устал! КД: {remaining.Seconds}с.\nГора Элимп остаётся пустой!",
+                            3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                         return;
@@ -112,12 +118,14 @@ namespace NotEliteBot
                         Memory.ElimpLeader.LeaderMsg = string.IsNullOrEmpty(arg)
                             ? "отсутствует"
                             : $"\n\n«{arg}»".Replace("@", "");
-                        await ctx.Bot.SendTextMessageAsync(
+                       await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Гора Элимп покорена!\n\n" +
                             $"Новый лидер: {ctx.Update.Message.From.FirstName} {ctx.Update.Message.From.LastName}\n" +
                             $"Новый флаг чата: {ctx.Update.Message.Chat.Title}\n" +
                             $"Новый девиз лидера: {Memory.ElimpLeader.LeaderMsg}",
+                            -1,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                         Cooldowns.TryUse(key1, TimeSpan.FromSeconds(1), out remaining);
@@ -132,9 +140,11 @@ namespace NotEliteBot
                     }
                     else
                     {
-                        await ctx.Bot.SendTextMessageAsync(
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Не удалось\nГора Элимп остаётся пустой!",
+                            3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                         return;
@@ -153,9 +163,11 @@ namespace NotEliteBot
                     var allSessions = Memory.Sessions.Values;
                     if (!allSessions.Any(s => s.ConqestedElimp > 0))
 {
-                        await ctx.Bot.SendTextMessageAsync(
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             "Пока что никто не покорял Элимп",
+                            3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                         return;
@@ -221,10 +233,12 @@ namespace NotEliteBot
                         sb.AppendLine();
                         sb.AppendLine($"Этот чат покорил Элимп {currentChat.ConqestedElimp} раз(а)");
                     }
-
-                    await ctx.Bot.SendTextMessageAsync(
+                    MessageManager.Tick(ctx.Bot, ctx.Update, 5);
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
                         ctx.Update.Message.Chat.Id,
                         sb.ToString(),
+                        10,
                         replyToMessageId: ctx.Update.Message.MessageId
                     );
                 },
@@ -245,9 +259,11 @@ namespace NotEliteBot
 
                     if (!Commander.Cooldowns.TryUse(key, TimeSpan.FromMinutes(5), out var remaining))
                     {
-                        await ctx.Bot.SendTextMessageAsync(
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Рано. Подожди {remaining.Minutes}м. {remaining.Seconds}с.",
+                            3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                         return;
@@ -331,9 +347,11 @@ namespace NotEliteBot
 
                     response = phrase.Replace("{name}", theName);
 
-                    await ctx.Bot.SendTextMessageAsync(
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
                         msg.Chat.Id,
                         response,
+                        -1,
                         replyToMessageId: replyId
                     );
                 }
@@ -373,9 +391,11 @@ namespace NotEliteBot
                         timeTilMakson = $"Максон вернётся из армии через: {months} мес. {diff.Days} дн. {diff.Hours} ч. {diff.Minutes} м. {diff.Seconds} с.";
                     }
 
-                    await ctx.Bot.SendTextMessageAsync(
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
                         ctx.Update.Message.Chat.Id,
                         timeTilMakson,
+                        10,
                         replyToMessageId: ctx.Update.Message.MessageId
                     );
                 }
@@ -410,10 +430,11 @@ namespace NotEliteBot
                     string response = responses[rnd.Next(0, responses.Length)];
                     var msg = ctx.Update.Message;
                     int replyId = msg.ReplyToMessage?.MessageId ?? msg.MessageId;
-                    await ctx.Bot.SendTextMessageAsync
-                    (
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
                         msg.Chat.Id,
                         response,
+                        -1,
                         replyToMessageId: replyId,
                         parseMode: ParseMode.MarkdownV2
                     );
@@ -460,9 +481,11 @@ namespace NotEliteBot
                         },
                         untilDate: DateTimeOffset.FromUnixTimeSeconds(until).UtcDateTime
                     );
-                    await ctx.Bot.SendTextMessageAsync(
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
                         ctx.Update.Message.Chat.Id,
                         $"Сглыпа в блендере на {time}м. 👌",
+                        3,
                         replyToMessageId: ctx.Update.Message.MessageId
                     );
                 }
@@ -501,9 +524,11 @@ namespace NotEliteBot
                         },
                         untilDate: DateTime.UtcNow.AddSeconds(1) // Ставим минимально возможное время, чтобы ограничения снялись
                     );
-                    await ctx.Bot.SendTextMessageAsync(
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
                         ctx.Update.Message.Chat.Id,
                         $"Сглыпа освобождён из блендера 👌",
+                        3,
                         replyToMessageId: ctx.Update.Message.MessageId
                     );
                 }
@@ -560,17 +585,21 @@ namespace NotEliteBot
                     Memory.AllowCustomSignature = !Memory.AllowCustomSignature;
                     if (Memory.AllowCustomSignature)
                     {
-                        await ctx.Bot.SendTextMessageAsync(
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Включены кастомные подписи в Элитке",
+                            3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                     }
                     else
                     {
-                        await ctx.Bot.SendTextMessageAsync(
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
                             ctx.Update.Message.Chat.Id,
                             $"Выключены кастомные подписи в Элитке",
+                            3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                     }

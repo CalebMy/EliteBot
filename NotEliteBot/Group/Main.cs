@@ -30,8 +30,8 @@ namespace NotEliteBot
 
                 bool isBanWorded = await BanWordProcess(botClient, update, session, cancellationToken);
                 if (isBanWorded) return;
-                CommonProcess(botClient, update, session, cancellationToken);
-                MemberSpecificProcess(botClient, update, session, messageText, cancellationToken);
+                bool isCommon = await CommonProcess(botClient, update, session, cancellationToken);
+                if (!isCommon) MemberSpecificProcess(botClient, update, session, messageText, cancellationToken);
                 CommandProcess(botClient, update, session, cancellationToken);
 
             }
@@ -41,7 +41,7 @@ namespace NotEliteBot
             }
 
         }
-        public static async void CommonProcess(ITelegramBotClient botClient, Update update, Session session, CancellationToken cancellationToken)
+        public static async Task<bool> CommonProcess(ITelegramBotClient botClient, Update update, Session session, CancellationToken cancellationToken)
         {
 
             var msg = update.Message;
@@ -62,26 +62,6 @@ namespace NotEliteBot
                 }
             }
 
-            if (messageText.Contains("ELITE"))
-            {
-                await botClient.SendTextMessageAsync(
-                    update.Message.Chat.Id,
-                    ">ELITE\\*\n" +
-                    "\\*Запрещённая в ЭЭ организация\\.",
-                    parseMode: ParseMode.MarkdownV2,
-                    replyToMessageId: update.Message.MessageId);
-                Debug.Log("ЗАПРЕТКА", Debug.LogLevel.Info);
-            }
-            else if (messageText.Contains("37"))
-            {
-                await botClient.SendTextMessageAsync(
-                    update.Message.Chat.Id,
-                    "37 САН-ФРАНЦИСКО 37",
-                    replyToMessageId: update.Message.MessageId);
-                Debug.Log("САН-ФРАНЦИСКО", Debug.LogLevel.Info);
-            }
-
-
             if (msg.From.Id != IDs.Telegram && (messageText.ToLower().StartsWith("это не я") ||
                 messageText.ToLower().StartsWith("ето не я") ||
                 messageText.ToLower().StartsWith("енто не я")))
@@ -95,7 +75,7 @@ namespace NotEliteBot
                 );
 
                 var post = Chanel.GetPostFromThred(IDs.ElitkaChanel, msg.MessageThreadId);
-                if (post == null) return;
+                if (post == null) return false;
 
                 // --- 2. собираем все допустимые подписи ---
                 var validSignatures = new HashSet<string>();
@@ -134,7 +114,7 @@ namespace NotEliteBot
                 );
 
                 if (!isValid)
-                    return;
+                    return false;
 
                 // --- 5. редактирование ---
                 await botClient.SendTextMessageAsync(
@@ -165,6 +145,7 @@ namespace NotEliteBot
                     Debug.Log(
                         $"Фейк отредактирован\n        Канал: {post.MessageId}\n       Чат: {post.ThreadId}",
                         Debug.LogLevel.Info);
+                    return true;
                 }
                 catch (Exception ex)
                 {
@@ -193,7 +174,8 @@ namespace NotEliteBot
                     "В душе не чаю",
                     "Depends",
                     "Именно так!",
-                    "Ни в коем случае!"
+                    "Ни в коем случае!",
+                    "Доооо братан конечно конечно братан"
                 };
                 Random rnd = new Random();
                 string answer = responses[rnd.Next(0, responses.Length)];
@@ -204,6 +186,7 @@ namespace NotEliteBot
                         answer,
                         replyToMessageId: msg.MessageId
                     );
+                    return true;
                 }
                 catch (Exception ex)
                 {
@@ -240,12 +223,34 @@ namespace NotEliteBot
                         response,
                         replyToMessageId: msg.MessageId
                     );
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     Debug.Log(ex.Message, Debug.LogLevel.Error);
                 }
             }
+            else if (messageText.Contains("ELITE"))
+            {
+                await botClient.SendTextMessageAsync(
+                    update.Message.Chat.Id,
+                    ">ELITE\\*\n" +
+                    "\\*Запрещённая в ЭЭ организация\\.",
+                    parseMode: ParseMode.MarkdownV2,
+                    replyToMessageId: update.Message.MessageId);
+                Debug.Log("ЗАПРЕТКА", Debug.LogLevel.Info);
+                return true;
+            }
+            else if (messageText.Contains("37"))
+            {
+                await botClient.SendTextMessageAsync(
+                    update.Message.Chat.Id,
+                    "37 САН-ФРАНЦИСКО 37",
+                    replyToMessageId: update.Message.MessageId);
+                Debug.Log("САН-ФРАНЦИСКО", Debug.LogLevel.Info);
+                return true;
+            }
+            return false;
         }
         public static async void MemberSpecificProcess(ITelegramBotClient botClient, Update update, Session session, string messageText, CancellationToken cancellationToken)
         {

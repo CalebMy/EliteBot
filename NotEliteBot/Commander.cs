@@ -289,10 +289,11 @@ namespace NotEliteBot
 
                 keyboard = new InlineKeyboardMarkup(new[] { buttons });
             }
-
-            await botClient.SendTextMessageAsync(
+            await MessageManager.SendAsync(
+                botClient,
                 msg.Chat.Id,
                 text,
+                10,
                 replyMarkup: keyboard
             );
         }

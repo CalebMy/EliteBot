@@ -73,14 +73,17 @@ namespace NotEliteBot
                    ?? update.ChannelPost
                    ?? update.EditedMessage;
             if (update.CallbackQuery != null) msg = update.CallbackQuery.Message;
-                if (msg == null) return;
+            if (msg == null) return;
 
             var chatType = msg.Chat.Type;
+            await MessageManager.Tick(botClient, update);
             try
             {
-
-
-
+                string key = $"primary-cooldown_{msg.From.Id}_{msg.Chat.Id}";
+                if (!Commander.Cooldowns.TryUse(key, TimeSpan.FromMilliseconds(500), out var remaining))
+                {
+                    return;
+                }
                 switch (chatType)
                 {
                     case ChatType.Private:

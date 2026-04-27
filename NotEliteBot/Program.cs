@@ -78,6 +78,8 @@ namespace NotEliteBot
             var chatType = msg.Chat.Type;
             try
             {
+                var user = SessionManager.Get(msg.From.Id, msg.From.Id, SessionType.Private);
+                if (user.BotBan == true) return;
                 await MessageManager.Tick(botClient, update);
                 string key = $"primary-cooldown_{msg?.From?.Id}_{msg.Chat.Id}";
                 if (!Commander.Cooldowns.TryUse(key, TimeSpan.FromMilliseconds(500), out var remaining))

@@ -217,11 +217,19 @@ namespace NotEliteBot
 
                     for (int i = 0; i < topChats.Count; i++)
                     {
-                        var s = topChats[i];
-                        var chat = await ctx.Bot.GetChatAsync(s.Id);
 
-                        string name = chat.Title; // можно заменить на Title если хранишь
-                        sb.AppendLine($"{i + 1}. {name} — {s.ConqestedElimp} {GetConqWord(s.ConqestedElimp)}");
+                        try
+                        {
+                            var s = topChats[i];
+                            var chat = await ctx.Bot.GetChatAsync(s.Id);
+
+                            string name = chat.Title; // можно заменить на Title если хранишь
+                            sb.AppendLine($"{i + 1}. {name} — {s.ConqestedElimp} {GetConqWord(s.ConqestedElimp)}");
+                        }
+                        catch
+                        {
+
+                        }
                     }
 
                     // --- ПРОВЕРКА ТЕКУЩЕГО ЧАТА ---
@@ -606,6 +614,80 @@ namespace NotEliteBot
                     }
                 }
             },
+            // БотБан пользователя
+            new CommandDefinition
+            {
+                Name = "botban",
+                Description = "отключить весь функционал бота пользователю",
+                AllowedUserIds = { IDs.admin },
+                Arguments = { },
+                Execute = async ctx =>
+                {
+                    if (ctx.Update.Message.ReplyToMessage == null)
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Эту команду нужно использовать в ответ на сообщение пользователя, которого вы хотите забанить",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        return;
+                    }
+                    else if (ctx.Update.Message.ReplyToMessage.From.Id != IDs.admin)
+                        {
+                        long userIdToBan = ctx.Update.Message.ReplyToMessage.From.Id;
+                        var session = SessionManager.Get(userIdToBan, userIdToBan, SessionType.Private);
+                        session.BotBan = true;
+                        Memory.SaveAll();
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"БотБан выдан",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                    }
+                    else throw new Exception("Нельзя выдать БотБан создателю бота!");
+                }
+
+            },
+            // Пардон БотБана
+                new CommandDefinition
+                                {
+                    Name = "botpardon",
+                    Description = "убрать БотБан у пользователя",
+                    AllowedUserIds = { IDs.admin },
+                    Arguments = { },
+                    Execute = async ctx =>
+                    {
+                        if (ctx.Update.Message.ReplyToMessage == null)
+                        {
+                            await MessageManager.SendAsync(
+                                ctx.Bot,
+                                ctx.Update.Message.Chat.Id,
+                                $"Эту команду нужно использовать в ответ на сообщение пользователя, у которого вы хотите убрать БотБан",
+                                3,
+                                replyToMessageId: ctx.Update.Message.MessageId
+                            );
+                            return;
+                        }
+                        else if (ctx.Update.Message.ReplyToMessage.From.Id != IDs.admin)
+                        {
+                            long userIdToUnban = ctx.Update.Message.ReplyToMessage.From.Id;
+                            var session = SessionManager.Get(userIdToUnban, userIdToUnban, SessionType.Private);
+                            session.BotBan = false;
+                            Memory.SaveAll();
+                            await MessageManager.SendAsync(
+                                ctx.Bot,
+                                ctx.Update.Message.Chat.Id,
+                                $"БотБан убран",
+                                3,
+                                replyToMessageId: ctx.Update.Message.MessageId
+                            );
+                        }
+                    }
+                }
 
         };
         public static string GetConqWord(int n)

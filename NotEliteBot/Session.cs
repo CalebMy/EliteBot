@@ -16,6 +16,7 @@ namespace NotEliteBot
         public bool PostingBan { get; set; }
         public List<long> AssociatedIDs { get; set; }
         public int ConqestedElimp { get; set; }
+        public bool BotBan { get; set; }
         public int Testosterone { get; set; } // от 0 до 1000
         public List<string> SmokeActions { get; set; }
         public int CurrentSmokeDurability {  get; set; }
@@ -53,6 +54,7 @@ namespace NotEliteBot
                     Testosterone = 200,
                     SmokeActions = new List<string>(),
                     CurrentSmokeDurability = 0,
+                    BotBan = false
                 };
 
                 Memory.Sessions[key] = session;

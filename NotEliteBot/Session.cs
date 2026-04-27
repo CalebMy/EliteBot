@@ -20,6 +20,7 @@ namespace NotEliteBot
         public int Testosterone { get; set; } // от 0 до 1000
         public List<string> SmokeActions { get; set; }
         public int CurrentSmokeDurability {  get; set; }
+        public string ShortAdress {  get; set; }
 
     }
     public enum SessionType
@@ -54,7 +55,8 @@ namespace NotEliteBot
                     Testosterone = 200,
                     SmokeActions = new List<string>(),
                     CurrentSmokeDurability = 0,
-                    BotBan = false
+                    BotBan = false,
+                    ShortAdress = ""
                 };
 
                 Memory.Sessions[key] = session;

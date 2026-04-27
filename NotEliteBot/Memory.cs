@@ -21,6 +21,7 @@ namespace NotEliteBot
         }
         public static Dictionary<string, DateTime> CooldownDict = new();
         public static Dictionary<string, Session> Sessions = new();
+        public static Dictionary<string, long> ChatAddresses = new();
         public static List<ChannelPostInfo> PostStorage = new();
         public static List<string> BanWords = new();
         public static void SaveAll(string dir = "memory")
@@ -41,6 +42,7 @@ namespace NotEliteBot
 
             SaveToFile(Path.Combine(dir, "cooldowns.json"), CooldownDict);
             SaveToFile(Path.Combine(dir, "sessions.json"), Sessions);
+            SaveToFile(Path.Combine(dir, "adresses.json"), ChatAddresses);
             SaveToFile(Path.Combine(dir, "posts.json"), PostStorage);
             SaveToFile(Path.Combine(dir, "banwords.json"), BanWords);
 
@@ -61,6 +63,7 @@ namespace NotEliteBot
 
             CooldownDict = LoadFromFile<Dictionary<string, DateTime>>(Path.Combine(dir, "cooldowns.json")) ?? new();
             Sessions = LoadFromFile<Dictionary<string, Session>>(Path.Combine(dir, "sessions.json")) ?? new();
+            ChatAddresses = LoadFromFile<Dictionary<string, long>>(Path.Combine(dir, "adresses.json")) ?? new();
             PostStorage = LoadFromFile<List<ChannelPostInfo>>(Path.Combine(dir, "posts.json")) ?? new();
             BanWords = LoadFromFile<List<string>>(Path.Combine(dir, "banwords.json")) ?? new();
         }

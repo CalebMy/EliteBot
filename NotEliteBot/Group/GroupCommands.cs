@@ -582,6 +582,98 @@ namespace NotEliteBot
 
                 }
             },
+            // Отправить телеграмму в другой чат
+            new CommandDefinition
+            {
+                Name = "telegraph",
+                Description = "отправить телеграмму в другой чат (только для админов чата)",
+                AllowedStatuses = { ChatMemberStatus.Administrator, ChatMemberStatus.Creator },
+                Arguments = new()
+                {
+                    new ArgumentDefinition { Type = ArgumentType.QuotedString },
+                    new ArgumentDefinition { Type = ArgumentType.Rest }
+                },
+                Execute = async ctx =>
+                {
+                    // Проверяем кд
+                    string key = $"telegraph_{ctx.Update.Message.Chat.Id}";
+                    TimeSpan remaining;
+                    bool isOnCooldown = !Commander.Cooldowns.TryUse(key, TimeSpan.FromHours(6), out remaining);
+                    if (isOnCooldown)
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Пока что нельзя отправить телеграмму. Подождите {remaining.Hours}ч. {remaining.Minutes}м. {remaining.Seconds}с.",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        return;
+                    }
+                    // Проверяем адрес чата и не пытается ли юзер отправить телеграмму в свой же чат
+                    string address = (string)ctx.Args[0];
+                    if (!Memory.ChatAddresses.TryGetValue(address, out var targetChatId))
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Чат с таким адресом не найден",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        Cooldowns.Reset(key);
+                        return;
+                    }
+                    else if (targetChatId == ctx.Update.Message.Chat.Id)
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Нельзя отправить телеграмму в этот же чат",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        Cooldowns.Reset(key);
+                        return;
+                    }
+                    // Элементы форматирования телеграммы
+                    // Полное имя отправителя
+                    string SenderName = $"{ctx.Update.Message.From.FirstName} {ctx.Update.Message.From.LastName}".Trim();
+                    string Head = $"Телеграмма от {SenderName} из {ctx.Update.Message.Chat.Title}!";
+                    string Tail = $"С уважением, {SenderName} от государства {ctx.Update.Message.Chat.Title}.";
+                    string Body = (string)ctx.Args[1];
+
+                    // Отправляем
+                    try
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            targetChatId,
+                            $"{Head}\n\n{Body}\n\n{Tail}",
+                            -1
+                        );
+                        await MessageManager.SendAsync
+                        (
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Телеграмма отправлена в {ctx.Bot.GetChatAsync(targetChatId).Result.Title}",
+                            -1
+                        );
+                        Cooldowns.TryUse(key, TimeSpan.FromMilliseconds(1), out remaining);
+                    }
+                    catch (Exception ex)
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Не удалось отправить телеграмму: {ex.Message}",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        Cooldowns.Reset(key);
+                    }
+                }
+            },
             // Вкл/выкл кастомные подписи в канале
             new CommandDefinition
             {
@@ -612,6 +704,47 @@ namespace NotEliteBot
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                     }
+                }
+            },
+            // Добавить краткий адрес для чата
+            new CommandDefinition
+            {
+                Name = "add_adress",
+                Description = "добавить краткий адрес для чата (только для разработчика бота)",
+                AllowedUserIds = { IDs.admin },
+                Arguments = { new ArgumentDefinition { Type = ArgumentType.QuotedString } },
+                Execute = async ctx =>
+                {
+                    var chatSession = SessionManager.Get(ctx.Session.ChatId, ctx.Session.ChatId, SessionType.Group);
+                    string newAddress = (string)ctx.Args[0];
+                    if (Memory.ChatAddresses.ContainsKey(newAddress))
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Этот адрес уже занят",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        return;
+                    }
+                    // Удаляем старый адрес, если он есть
+                    if (!string.IsNullOrEmpty(chatSession.ShortAdress))
+                    {
+                        Memory.ChatAddresses.Remove(chatSession.ShortAdress);
+                    }
+                    // Добавляем новый адрес
+                    chatSession.ShortAdress = newAddress;
+                    Memory.ChatAddresses[newAddress] = ctx.Session.ChatId;
+                    // Сообщаем об успешном добавлении
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
+                        ctx.Update.Message.Chat.Id,
+                        $"Добавлен адрес для этого чата: {newAddress}",
+                        3,
+                        replyToMessageId: ctx.Update.Message.MessageId
+                    );
+                    Memory.SaveAll();
                 }
             },
             // БотБан пользователя

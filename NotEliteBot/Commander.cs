@@ -422,6 +422,11 @@ namespace NotEliteBot
                 remaining = TimeSpan.Zero;
                 return true;
             }
+            public static void Reset(string key)
+            {
+                // Сбросить указанный кулдаун
+                Memory.CooldownDict.Remove(key);
+            }
         }
     }
 }

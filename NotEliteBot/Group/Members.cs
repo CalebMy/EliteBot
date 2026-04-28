@@ -76,10 +76,13 @@ namespace NotEliteBot
             public async Task Handle(ITelegramBotClient botClient, Update update, Session session, string messageText, CancellationToken ct)
             {
 
-                if (L33tMatcher.ContainsL33t(messageText, "найди работу")||
+                if (L33tMatcher.ContainsL33t(messageText, "найди работу") ||
                     L33tMatcher.ContainsL33t(messageText, "find job") ||
+                    L33tMatcher.ContainsL33t(messageText, "работу найди") ||
                     L33tMatcher.ContainsL33t(messageText, "файнд джоб") ||
                     L33tMatcher.ContainsL33t(messageText, "naydi rabotu") ||
+                    L33tMatcher.ContainsL33t(messageText, "rabotu naydi") ||
+                    L33tMatcher.ContainsL33t(messageText, "rabotu naidi") ||
                     L33tMatcher.ContainsL33t(messageText, "naidi rabotu"))
                 {
                     await botClient.SendTextMessageAsync(

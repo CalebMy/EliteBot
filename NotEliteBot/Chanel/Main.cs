@@ -19,6 +19,7 @@ namespace NotEliteBot
                 if (update.ChannelPost.Chat.Id == IDs.ElitkaChanel && !Memory.AllowCustomSignature)
                 {
                     var signatures = await GetAdminSignatures(botClient, update.ChannelPost.Chat.Id);
+                    signatures.Remove("Элитарный Бот");
                     bool isValid = IsValidSignature(signature, signatures);
                     if (!isValid)
                     {

@@ -17,7 +17,7 @@ namespace NotEliteBot
         {
             public static List<string> Prefixes = new() { "/", "!" };
 
-            public static string BotUsername = "I_am_NotElite_bot";
+            public static string BotUsername = "I_am_NotElite_bot"; //наглая ложь
         }
         public class CommandDefinition
         {

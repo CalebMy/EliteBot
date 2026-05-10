@@ -12,7 +12,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using static System.Collections.Specialized.BitVector32;
-//8400328717:AAH2HRBkVRlK0tVa4G-T8pMxZARXvX7SP8Q
+using System.IO;
 namespace NotEliteBot
 {
     class Program
@@ -28,7 +28,7 @@ namespace NotEliteBot
             Group.RegisterGroupCommonCommands();
             Private.RegisterPrivateCommands();
             Memory.LoadAll();
-            _botClient = new TelegramBotClient("8400328717:AAH2HRBkVRlK0tVa4G-T8pMxZARXvX7SP8Q");
+            _botClient = new TelegramBotClient(System.IO.File.ReadAllText("key.txt"));
             _receiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = new[] // Тут указываем типы получаемых Update`ов, о них подробнее расказано тут https://core.telegram.org/bots/api#update

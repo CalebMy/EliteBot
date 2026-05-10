@@ -30,6 +30,12 @@ namespace NotEliteBot
 
                 bool isBanWorded = await BanWordProcess(botClient, update, session, cancellationToken);
                 if (isBanWorded) return;
+                try
+                {
+                    var user = SessionManager.Get(msg.From.Id, msg.From.Id, SessionType.Private);
+                    if (user.BotBan == true) return;
+                }
+                catch { }
                 bool isCommon = await CommonProcess(botClient, update, session, cancellationToken);
                 if (!isCommon) MemberSpecificProcess(botClient, update, session, messageText, cancellationToken);
                 CommandProcess(botClient, update, session, cancellationToken);

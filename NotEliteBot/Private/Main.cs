@@ -16,6 +16,8 @@ namespace NotEliteBot
         public static async void Main(long chatId, ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             Session session = SessionManager.Get(chatId, chatId, SessionType.Private);
+            if (session.BotBan == true) return;
+            
             long userId = session.Id;
             if (update.CallbackQuery != null) { CalloutProcess(botClient, update, cancellationToken, session); return; }
             try

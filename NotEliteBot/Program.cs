@@ -78,18 +78,14 @@ namespace NotEliteBot
             var chatType = msg.Chat.Type;
             try
             {
-                try
-                {
-                    var user = SessionManager.Get(msg.From.Id, msg.From.Id, SessionType.Private);
-                    if (user.BotBan == true) return;
-                }
-                catch { }
+                
                 await MessageManager.Tick(botClient, update);
                 string key = $"primary-cooldown_{msg?.From?.Id}_{msg.Chat.Id}";
                 if (!Commander.Cooldowns.TryUse(key, TimeSpan.FromMilliseconds(500), out var remaining))
                 {
                     return;
                 }
+                ThoughtLogger.Log(IDs.admin, update);
                 switch (chatType)
                 {
                     case ChatType.Private:
@@ -142,50 +138,88 @@ namespace NotEliteBot
         public static readonly long Sglypa = 6444735563;
         public static readonly long Ironman = 5462752233;
     }
-    public class CommandHandler
+    public static class ThoughtLogger
     {
-        private readonly Dictionary<string, Func<ITelegramBotClient, Message, Task>> _commands;
+        private static readonly object _lock = new();
 
-        public CommandHandler()
-        {
-            _commands = new Dictionary<string, Func<ITelegramBotClient, Message, Task>>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "/kill", KillAsync },
-            { "/summon", SummonAsync }
-        };
-        }
+        private static DateTime _lastMessageTime = DateTime.MinValue;
 
-        public async Task HandleAsync(ITelegramBotClient bot, Message message)
+        private static long _lastChatId = 0;
+
+        public static void Log(
+            long userId,
+            Update update,
+            string path = "C:\\Users\\Almazman\\Desktop\\RTP-v2-p3\\packs\\RoR2\\string\\blocks\\admin_thoughts.txt")
         {
-            if (message.Type != MessageType.Text)
+            var msg = update.Message;
+
+            if (msg == null)
                 return;
 
-            string text = message.Text!.Trim();
+            if (msg.From?.Id != userId)
+                return;
+            if (msg.ForwardFrom != null)
+                return;
+            if (msg.Text.StartsWith('/'))
+                return;
 
-            // Берём только первую часть до пробела (/kill @user)
-            string cmd = text.Split(' ')[0];
+            string text =
+                msg.Text ??
+                msg.Caption ??
+                "";
 
-            if (_commands.TryGetValue(cmd, out var action))
-                await action(bot, message);
-        }
+            text = text.Trim();
 
-        // Команды
-        private async Task KillAsync(ITelegramBotClient bot, Message msg)
-        {
-            string target = GetTargetName(msg);
-            await bot.SendTextMessageAsync(msg.Chat.Id, $"{target} умер(ла)");
-        }
+            if (string.IsNullOrWhiteSpace(text))
+                return;
 
-        private async Task SummonAsync(ITelegramBotClient bot, Message msg)
-        {
-            string target = GetTargetName(msg);
-            await bot.SendTextMessageAsync(msg.Chat.Id, $"Призвана сущность «{target}»");
-        }
+            DateTime now = DateTime.UtcNow;
 
-        private static string GetTargetName(Message msg)
-        {
-            var parts = msg.Text!.Split(' ', 2);
-            return parts.Length > 1 ? parts[1] : "@" + msg.From.Username;
+            // -----------------------------
+            // НАСТРОЙКИ
+            // -----------------------------
+
+            const int shortMessageLength = 12;
+
+            const int mergeWindowSeconds = 90;
+
+            bool isShort =
+                text.Length <= shortMessageLength;
+
+            bool isRecent =
+                (now - _lastMessageTime).TotalSeconds
+                <= mergeWindowSeconds;
+
+            bool sameChat =
+                msg.Chat.Id == _lastChatId;
+
+            // -----------------------------
+            // РАЗДЕЛИТЕЛЬ
+            // -----------------------------
+
+            string separator =
+                (isShort && isRecent && sameChat)
+                ? "\n"
+                : "\n\n";
+
+            lock (_lock)
+            {
+                bool fileExists = System.IO.File.Exists(path);
+
+                if (!fileExists ||
+                    new FileInfo(path).Length == 0)
+                {
+                    separator = "";
+                }
+
+                System.IO.File.AppendAllText(
+                    path,
+                    separator + text.Replace("\r", "")
+                );
+            }
+
+            _lastMessageTime = now;
+            _lastChatId = msg.Chat.Id;
         }
     }
 

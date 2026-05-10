@@ -18,6 +18,7 @@ namespace NotEliteBot
             public static long CurrentLeader = 1;
             public static long LeaderChat = 0;
             public static string LeaderMsg = "отсутствует";
+            public static int Cooldown = 3;
         }
         public static Dictionary<string, DateTime> CooldownDict = new();
         public static Dictionary<string, Session> Sessions = new();

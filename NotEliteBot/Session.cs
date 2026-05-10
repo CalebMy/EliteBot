@@ -21,7 +21,8 @@ namespace NotEliteBot
         public List<string> SmokeActions { get; set; }
         public int CurrentSmokeDurability {  get; set; }
         public string ShortAdress {  get; set; }
-
+        public double ElimpChance { get; set; } = 0.10;
+        public DateTime LastElimpTry { get; set; }
     }
     public enum SessionType
     {
@@ -56,7 +57,9 @@ namespace NotEliteBot
                     SmokeActions = new List<string>(),
                     CurrentSmokeDurability = 0,
                     BotBan = false,
-                    ShortAdress = ""
+                    ShortAdress = "",
+                    ElimpChance = 0.10,
+                    LastElimpTry = DateTime.Now,
                 };
 
                 Memory.Sessions[key] = session;

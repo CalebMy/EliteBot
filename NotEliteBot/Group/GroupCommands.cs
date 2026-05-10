@@ -21,6 +21,9 @@ namespace NotEliteBot
                 GroupCommonCommandSet.Commands.Add(cmd);
             }
         }
+        const double BASE_CHANCE = 0.10;
+        const double MIN_CHANCE = 0.00;
+        const double MAX_CHANCE = 0.20;
         private static readonly List<CommandDefinition> GroupCommandsCommon = new List<CommandDefinition>()
         {
             // Гора Элимп
@@ -35,11 +38,22 @@ namespace NotEliteBot
                     Random rnd = new();
                     string key1 = $"elimp_global";
                     TimeSpan remaining;
-                    bool isOnCooldown = !Commander.Cooldowns.TryUse(key1, TimeSpan.FromHours(3), out remaining);
+                    bool isOnCooldown = !Commander.Cooldowns.TryUse(key1, TimeSpan.FromHours(Memory.ElimpLeader.Cooldown), out remaining);
                     if (Memory.ElimpLeader.CurrentLeader != 0 && isOnCooldown)
                     {
                         if (ctx.Update.Message.From.Id == Memory.ElimpLeader.CurrentLeader && Memory.ElimpLeader.LeaderMsg == "отсутствует" && !string.IsNullOrEmpty((string)ctx.Args[0]))
                         {
+                            if (((string)ctx.Args[0]).Length > 250)
+                            {
+                                await MessageManager.SendAsync(
+                                    ctx.Bot,
+                                    ctx.Update.Message.Chat.Id,
+                                    $"Девиз слишком длинный! Максимум 250 символов.",
+                                    5,
+                                    replyToMessageId: ctx.Update.Message.MessageId
+                                );
+                                return;
+                            }
                             Memory.ElimpLeader.LeaderMsg = $"\n\n«{(string)ctx.Args[0]}»".Replace("@", "");
                             await MessageManager.SendAsync(
                             ctx.Bot,
@@ -100,25 +114,98 @@ namespace NotEliteBot
                         return;
                     }
                     string key2 = $"elimptry_user_{ctx.Update.Message.From.Id}";
+
+
+                    var UserPrivateSession = SessionManager.Get(
+                        ctx.Session.Id, ctx.Session.Id, SessionType.Private
+                    );
+
+                    double chance = UserPrivateSession.ElimpChance;
+
+                    DateTime now = DateTime.UtcNow;
+
+                    double secondsSinceLast =
+                        (now - UserPrivateSession.LastElimpTry).TotalSeconds;
+                    // Краткое сообщение о том, как справляется пользователь
+                    string perfomanceMsg = secondsSinceLast <= 15 ? "(+%)" :
+                        "(=%)";
+                    // обновляем время попытки
+                    UserPrivateSession.LastElimpTry = now;
+
+                    // -----------------------------
+                    // ШТРАФ
+                    // -----------------------------
+
+                    if (secondsSinceLast < 10)
+                    {
+                        // чем ближе к 0 сек, тем сильнее штраф
+                        double penaltyFactor = (10 - secondsSinceLast) / 10.0;
+
+                        // максимум ~ -2%
+                        chance -= 0.02 * penaltyFactor;
+                    }
+
+                    // -----------------------------
+                    // БОНУС
+                    // -----------------------------
+
+                    else if (secondsSinceLast <= 15)
+                    {
+                        // окно бонуса:
+                        // 10с = максимальный бонус
+                        // 15с = бонус исчезает
+
+                        double bonusFactor = (15 - secondsSinceLast) / 5.0;
+
+                        // максимум ~ +2%
+                        chance += 0.02 * bonusFactor;
+                    }
+
+                    // -----------------------------
+                    // ВОССТАНОВЛЕНИЕ К БАЗЕ
+                    // -----------------------------
+
+                    else
+                    {
+                        // плавный возврат к 10%
+
+                        if (chance > BASE_CHANCE)
+                            chance -= 0.005;
+                        else if (chance < BASE_CHANCE)
+                            chance += 0.005;
+                    }
+
+                    chance = Math.Clamp(
+                        chance,
+                        MIN_CHANCE,
+                        MAX_CHANCE
+                    );
+
+                    UserPrivateSession.ElimpChance = chance;
+
+
                     if (!Commander.Cooldowns.TryUse(key2, TimeSpan.FromSeconds(10), out remaining))
                     {
                         await MessageManager.SendAsync(
                             ctx.Bot,
                             ctx.Update.Message.Chat.Id,
-                            $"Ты устал! КД: {remaining.Seconds}с.\nГора Элимп остаётся пустой!",
+                            $"Ты устал! (-%) КД: {remaining.Seconds}с.\nГора Элимп остаётся пустой!",
                             3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                         return;
                     }
-                    else if (rnd.NextDouble() < 0.1) // 10% шанс покорить гору
+                    else if (rnd.NextDouble() < chance) // динамический шанс покорить гору
                     {
                         Memory.ElimpLeader.CurrentLeader = ctx.Update.Message.From.Id;
                         Memory.ElimpLeader.LeaderChat = ctx.Update.Message.Chat.Id;
                         var arg = (string)ctx.Args[0];
-                        Memory.ElimpLeader.LeaderMsg = string.IsNullOrEmpty(arg)
+                        Memory.ElimpLeader.LeaderMsg =
+                        string.IsNullOrEmpty(arg)
                             ? "отсутствует"
-                            : $"\n\n«{arg}»".Replace("@", "");
+                            : arg.Length > 250
+                                ? "отсутствует"
+                                : $"\n\n«{arg}»".Replace("@", "");
                        await MessageManager.SendAsync(
                             ctx.Bot,
                             ctx.Update.Message.Chat.Id,
@@ -131,11 +218,10 @@ namespace NotEliteBot
                         );
                         Cooldowns.TryUse(key1, TimeSpan.FromSeconds(1), out remaining);
 
-                        var UserPrivateSession = SessionManager.Get(ctx.Session.Id, ctx.Session.Id, SessionType.Private);
                         var ChatSession = SessionManager.Get(ctx.Session.ChatId, ctx.Session.ChatId, SessionType.Group);
                         UserPrivateSession.ConqestedElimp++;
                         ChatSession.ConqestedElimp++;
-
+                        Memory.ElimpLeader.Cooldown = rnd.Next(3,7);
                         Memory.SaveAll();
                         return;
                     }
@@ -144,7 +230,7 @@ namespace NotEliteBot
                         await MessageManager.SendAsync(
                             ctx.Bot,
                             ctx.Update.Message.Chat.Id,
-                            $"Не удалось\nГора Элимп остаётся пустой!",
+                            $"Не удалось! {perfomanceMsg}\nГора Элимп остаётся пустой!",
                             3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
@@ -159,6 +245,7 @@ namespace NotEliteBot
                 Arguments = new()
                 {
                 },
+
                 Execute = async ctx =>
                 {
                     var allSessions = Memory.Sessions.Values;
@@ -193,10 +280,17 @@ namespace NotEliteBot
 
                     for (int i = 0; i < topPeople.Count; i++)
                     {
-                        var s = topPeople[i];
-                        var user = await ctx.Bot.GetChatAsync(s.Id);
-                        string name = $"{user.FirstName} {user.LastName}"; // если хочешь — потом сюда подтянешь имя
-                        sb.AppendLine($"{i + 1}. {name} — {s.ConqestedElimp} {GetConqWord(s.ConqestedElimp)}");
+                        try
+                        {
+                            var s = topPeople[i];
+                            var user = await ctx.Bot.GetChatAsync(s.Id);
+                            string name = $"{user.FirstName} {user.LastName}";
+                            sb.AppendLine($"{i + 1}. {name} — {s.ConqestedElimp} {GetConqWord(s.ConqestedElimp)}");
+                        }
+                        catch
+                        {
+
+                        }
                     }
 
                     // --- ПРОВЕРКА ТЕКУЩЕГО ЮЗЕРА ---
@@ -251,6 +345,33 @@ namespace NotEliteBot
                         replyToMessageId: ctx.Update.Message.MessageId
                     );
                 },
+            },
+            // Информация о том, как играть в покорение Элимпа
+            new CommandDefinition
+            {
+                Name = "elimp_help",
+                Description = "узнайте как покорить Элимп",
+                Arguments = new()
+                {
+                },
+                Execute = async ctx =>
+                {
+                    string text =
+                        "Гора Элимп это священный пьедестал божеств, который один на все сущие чаты.\n\n" +
+                        "Используйте /elimp, чтобы попытаться покорить её.\n" +
+                        "После захвата, лидер Элимпа устанавливает на нём флаг своего чата и девиз. Спустя некоторое время гора опустеет и её можно будет покорить снова.\n\n" +
+                        "Базовый шанс покорения: 10%.\n" +
+                        "Если спамить попытками — шанс начнёт падать.\n" +
+                        "Если ловить хороший ритм — шанс может вырасти вплоть до 20%.\n\n" +
+                        "Идеальное время между попытками — сразу после окончания кулдауна.";
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
+                        ctx.Update.Message.Chat.Id,
+                        text,
+                        5,
+                        replyToMessageId: ctx.Update.Message.MessageId
+                    );
+                }
             },
             // Друлетка
             new CommandDefinition
@@ -348,12 +469,8 @@ namespace NotEliteBot
 
                     string response = "";
                     var phrase = Phrases[rnd.Next(Phrases.Count)];
-
-
                     var msg = ctx.Update.Message;
-
                     int replyId = msg.ReplyToMessage?.MessageId ?? msg.MessageId;
-
                     response = phrase.Replace("{name}", theName);
 
                     await MessageManager.SendAsync(
@@ -596,7 +713,7 @@ namespace NotEliteBot
                 Execute = async ctx =>
                 {
                     // Проверяем кд
-                    string key = $"telegraph_{ctx.Update.Message.Chat.Id}";
+                    string key = $"telegraph_{ctx.Update.Message.From.Id}_{ctx.Update.Message.Chat.Id}";
                     TimeSpan remaining;
                     bool isOnCooldown = !Commander.Cooldowns.TryUse(key, TimeSpan.FromHours(6), out remaining);
                     if (isOnCooldown)

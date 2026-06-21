@@ -936,8 +936,193 @@ namespace NotEliteBot
                                 replyToMessageId: ctx.Update.Message.MessageId
                             );
                         }
-                    }
                 }
+            },
+            // Вэйп
+            new CommandDefinition
+            {
+                Name = "vape",
+                Description = "Легендарный /VAPE",
+                Arguments = new() { },
+                Execute = async ctx =>
+                {
+                    string key = $"swim_{ctx.Update.Message.From.Id}";
+                    if (!Commander.Cooldowns.TryUse(key, TimeSpan.FromSeconds(5), out var remaining))
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            $"Ты устал! Отдохни {remaining.Seconds}с.",
+                            3,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        return;
+                    }
+
+                    var user = SessionManager.Get(
+                        ctx.Update.Message.From.Id,
+                        ctx.Update.Message.From.Id,
+                        SessionType.Private
+                    );
+
+                    Random rnd = new();
+                    bool drowned = rnd.NextDouble() < 0.12;
+
+                    List<string> normalMessages = new()
+                    {
+                        "|Вы курите /VAPE| |✅|",
+                        "|Вы парите| |💨|",
+                        "|Вы затягиваетесь| |🌬|",
+                        "|Вы курите| |🚬|",
+                    };
+                    List<string> rareMessages = new()
+                    {
+                        "|Вы курите /VAPE| |✅|",
+                        "|Вы парите| |💨|",
+                        "|Вы затягиваетесь| |🌬|",
+                        "|Вы курите| |🚬|",
+                    };
+
+                    string response;
+                    if (drowned)
+                    {
+                        user.VAPEStreak = 0;
+                        user.VAPEDeaths++;
+                        response = "|Вы умерли| |💀|";
+                    }
+                    else
+                    {
+                        user.VAPEStreak++;
+                        user.TotalVAPE++;
+
+                        if (rnd.NextDouble() < 0.25)
+                            response = rareMessages[rnd.Next(rareMessages.Count)];
+                        else
+                            response = normalMessages[rnd.Next(normalMessages.Count)];
+                    }
+
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
+                        ctx.Update.Message.Chat.Id,
+                        response,
+                        5,
+                        replyToMessageId: ctx.Update.Message.MessageId
+                    );
+                }
+            },
+            // Статистика плавания
+            new CommandDefinition
+            {
+                Name = "vape_stat",
+                Description = "Cтатистика /VAPE",
+                Arguments = new() { },
+                Execute = async ctx =>
+                {
+                    var allSessions = Memory.Sessions.Values;
+                    if (!allSessions.Any(s => s.TotalVAPE > 0))
+                    {
+                        await MessageManager.SendAsync(
+                            ctx.Bot,
+                            ctx.Update.Message.Chat.Id,
+                            "Пока что никто не вэйпал",
+                            10,
+                            replyToMessageId: ctx.Update.Message.MessageId
+                        );
+                        return;
+                    }
+
+                    var vapers = allSessions
+                        .Where(s => s.TotalVAPE > 0 && s.SessionType == SessionType.Private)
+                        .ToList();
+
+                    var topStreak = vapers
+                        .OrderByDescending(s => s.VAPEStreak)
+                        .Take(10)
+                        .ToList();
+
+                    var topTotal = vapers
+                        .OrderByDescending(s => s.TotalVAPE)
+                        .Take(10)
+                        .ToList();
+
+                    var topDeaths = vapers
+                        .OrderByDescending(s => s.VAPEDeaths)
+                        .Take(10)
+                        .ToList();
+
+                    var sb = new StringBuilder();
+
+                    sb.AppendLine("💨 Топ 10 по текущей серии:");
+                    for (int i = 0; i < topStreak.Count; i++)
+                    {
+                        try
+                        {
+                            var s = topStreak[i];
+                            var user = await ctx.Bot.GetChatAsync(s.Id);
+                            string name = $"{user.FirstName} {user.LastName}";
+                            sb.AppendLine($"{i + 1}. {name} — {s.VAPEStreak} {GetSwimWord(s.VAPEStreak)}");
+                        }
+                        catch { }
+                    }
+
+                    var currentUser = vapers.FirstOrDefault(s =>
+                        s.Id == ctx.Update.Message.From.Id);
+
+                    if (currentUser != null && !topStreak.Any(s => s.Id == currentUser.Id))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine($"Ваша серия: {currentUser.VAPEStreak} {GetSwimWord(currentUser.VAPEStreak)}");
+                    }
+
+                    sb.AppendLine();
+                    sb.AppendLine("💨 Топ 10 по общему количеству заплывов:");
+                    for (int i = 0; i < topTotal.Count; i++)
+                    {
+                        try
+                        {
+                            var s = topTotal[i];
+                            var user = await ctx.Bot.GetChatAsync(s.Id);
+                            string name = $"{user.FirstName} {user.LastName}";
+                            sb.AppendLine($"{i + 1}. {name} — {s.TotalVAPE} {GetSwimWord(s.TotalVAPE)}");
+                        }
+                        catch { }
+                    }
+
+                    if (currentUser != null && !topTotal.Any(s => s.Id == currentUser.Id))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine($"Всего затяжек: {currentUser.TotalVAPE} {GetSwimWord(currentUser.TotalVAPE)}");
+                    }
+
+                    sb.AppendLine();
+                    sb.AppendLine("💀 Топ 10 по смертям:");
+                    for (int i = 0; i < topDeaths.Count; i++)
+                    {
+                        try
+                        {
+                            var s = topDeaths[i];
+                            var user = await ctx.Bot.GetChatAsync(s.Id);
+                            string name = $"{user.FirstName} {user.LastName}";
+                            sb.AppendLine($"{i + 1}. {name} — {s.VAPEDeaths} {GetDeathWord(s.VAPEDeaths)}");
+                        }
+                        catch { }
+                    }
+
+                    if (currentUser != null && !topDeaths.Any(s => s.Id == currentUser.Id))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine($"Ваши смерти: {currentUser.VAPEDeaths} {GetDeathWord(currentUser.VAPEDeaths)}");
+                    }
+
+                    await MessageManager.SendAsync(
+                        ctx.Bot,
+                        ctx.Update.Message.Chat.Id,
+                        sb.ToString(),
+                        15,
+                        replyToMessageId: ctx.Update.Message.MessageId
+                    );
+                }
+            }
 
         };
         public static string GetConqWord(int n)
@@ -953,6 +1138,36 @@ namespace NotEliteBot
                 1 => "покорение",
                 2 or 3 or 4 => "покорения",
                 _ => "покорений"
+            };
+        }
+        public static string GetSwimWord(int n)
+        {
+            int n100 = n % 100;
+            int n10 = n % 10;
+
+            if (n100 >= 11 && n100 <= 14)
+                return "затяжек";
+
+            return n10 switch
+            {
+                1 => "затяжка",
+                2 or 3 or 4 => "затяжки",
+                _ => "затяжек"
+            };
+        }
+        public static string GetDeathWord(int n)
+        {
+            int n100 = n % 100;
+            int n10 = n % 10;
+
+            if (n100 >= 11 && n100 <= 14)
+                return "смертей";
+
+            return n10 switch
+            {
+                1 => "смерть",
+                2 or 3 or 4 => "смерти",
+                _ => "смертей"
             };
         }
     }

@@ -37,6 +37,7 @@ namespace NotEliteBot
             Register(new Members.Almazman());
             Register(new Members.Artik());
             Register(new Members.Dinar());
+            Register(new Members.Bedulev());
             // Добавляйте другие обработчики здесь
 
         }

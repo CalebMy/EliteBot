@@ -24,6 +24,19 @@ namespace NotEliteBot
                     replyToMessageId: update.Message.MessageId);
             }
         }
+        public class Bedulev : IMemberSpecificHandler
+        {
+            public long UserId => 5577221205; // ID пользователя, для которого предназначен этот обработчик
+
+            public async Task Handle(ITelegramBotClient botClient, Update update, Session session, string messageText, CancellationToken ct)
+            {
+                if (L33tMatcher.ContainsL33t(messageText, "шаверм"))
+                await botClient.SendTextMessageAsync(
+                    update.Message.Chat.Id,
+                    "Шаурма*",
+                    replyToMessageId: update.Message.MessageId);
+            }
+        }
         public class Dinar : IMemberSpecificHandler
         {
             public long UserId => 5099820426; // ID пользователя, для которого предназначен этот обработчик

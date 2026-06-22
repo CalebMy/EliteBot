@@ -19,8 +19,8 @@ namespace NotEliteBot
         public bool BotBan { get; set; }
         public int Testosterone { get; set; } // от 0 до 1000
         public List<string> SmokeActions { get; set; }
-        public int CurrentSmokeDurability {  get; set; }
-        public string ShortAdress {  get; set; }
+        public int CurrentSmokeDurability { get; set; }
+        public string ShortAdress { get; set; }
         public double ElimpChance { get; set; } = 0.10;
         public DateTime LastElimpTry { get; set; }
         public int VAPEStreak { get; set; }

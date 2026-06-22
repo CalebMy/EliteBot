@@ -97,62 +97,105 @@ namespace NotEliteBot
                 return false;
             }
         }
+        private static readonly Dictionary<long, HashSet<string>> _adminSignaturesCache = new();
+        private static readonly object _cacheLock = new();
+
         public static async Task<HashSet<string>> GetAdminSignatures(
-     ITelegramBotClient botClient,
-     long channelId)
+            ITelegramBotClient botClient,
+            long channelId)
         {
-            var result = new HashSet<string>();
-
-            var admins = await botClient.GetChatAdministratorsAsync(channelId);
-
-            foreach (var admin in admins)
+            try
             {
-                // фильтр по правам
-                if (admin is ChatMemberAdministrator a && a.CanPostMessages != true)
-                    continue;
+                var result = new HashSet<string>();
 
-                if (admin is ChatMemberOwner || admin is ChatMemberAdministrator)
+                var admins = await botClient.GetChatAdministratorsAsync(channelId);
+
+                foreach (var admin in admins)
                 {
-                    var user = admin.User;
-                    if (user == null) continue;
-
-                    // --- 1. обычная подпись ---
-                    string signature = string.Join(" ",
-                        new[] { user.FirstName, user.LastName }
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                    );
-
-                    if (!string.IsNullOrWhiteSpace(signature))
-                        result.Add(signature);
-
-                    // --- 2. ассоциированные каналы ---
-                    var session = SessionManager.Get(
-                        user.Id,
-                        user.Id,
-                        SessionType.Private
-                    );
-
-                    if (session?.AssociatedIDs == null)
-                        continue;
-
-                    foreach (var assocId in session.AssociatedIDs)
+                    try
                     {
-                        try
-                        {
-                            var chat = await botClient.GetChatAsync(assocId);
+                        // фильтр по правам
+                        if (admin is ChatMemberAdministrator a && a.CanPostMessages != true)
+                            continue;
 
-                            if (!string.IsNullOrWhiteSpace(chat.Title))
-                                result.Add(chat.Title);
-                        }
-                        catch
+                        if (admin is ChatMemberOwner || admin is ChatMemberAdministrator)
                         {
-                            // бот не имеет доступа / канал не существует
+                            var user = admin.User;
+                            if (user == null)
+                                continue;
+
+                            // --- 1. обычная подпись ---
+                            string signature = string.Join(" ",
+                                new[] { user.FirstName, user.LastName }
+                                .Where(x => !string.IsNullOrWhiteSpace(x))
+                            );
+
+                            if (!string.IsNullOrWhiteSpace(signature))
+                                result.Add(signature);
+
+                            // --- 2. ассоциированные каналы ---
+                            var session = SessionManager.Get(
+                                user.Id,
+                                user.Id,
+                                SessionType.Private
+                            );
+
+                            if (session?.AssociatedIDs == null)
+                                continue;
+
+                            foreach (var assocId in session.AssociatedIDs)
+                            {
+                                try
+                                {
+                                    var chat = await botClient.GetChatAsync(assocId);
+
+                                    if (!string.IsNullOrWhiteSpace(chat.Title))
+                                        result.Add(chat.Title);
+                                }
+                                catch (Exception ex)
+                                {
+                                    // если конкретный assocId умер — просто пропускаем
+                                    Debug.Log($"Не удалось получить чат для ассоциированного ID {assocId} пользователя {user.Id}", Debug.LogLevel.Warning);
+                                    // Читаем конкретную ошибку
+                                    Debug.Log(ex.Message, Debug.LogLevel.Error);
+                                }
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        // если конкретный админ сломался — продолжаем дальше
+                        Debug.Log($"Не удалось обработать администратора {admin.User.Id} в канале {channelId}", Debug.LogLevel.Warning);
+                        // Читаем конкретную ошибку
+                        Debug.Log(ex.Message, Debug.LogLevel.Error);
+                    }
                 }
-            }
 
-            return result;
+                // Обновляем кеш только если реально что-то получили
+                if (result.Count > 0)
+                {
+                    lock (_cacheLock)
+                    {
+                        _adminSignaturesCache[channelId] = new HashSet<string>(result);
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // если весь метод рухнул — пытаемся вернуть кеш
+                Debug.Log($"Не удалось получить админов для канала {channelId}, возвращаем кеш", Debug.LogLevel.Warning);
+                // Читаем конкретную ошибку
+                Debug.Log(ex.Message, Debug.LogLevel.Error);
+                lock (_cacheLock)
+                {
+                    if (_adminSignaturesCache.TryGetValue(channelId, out var cached))
+                        return new HashSet<string>(cached);
+                }
+
+                return new HashSet<string>();
+            }
         }
         public static bool IsValidSignature(string input, HashSet<string> signatures)
         {

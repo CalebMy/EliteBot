@@ -942,10 +942,11 @@ namespace NotEliteBot
             new CommandDefinition
             {
                 Name = "vape",
-                Description = "Легендарный /VAPE",
+                Description = "Легендарный /VAPE — Made by t.me/SimplyIgor",
                 Arguments = new() { },
                 Execute = async ctx =>
                 {
+                    MessageManager.AddMessage(ctx.Update.Message.Chat.Id, ctx.Update.Message.MessageId, 3);
                     string key = $"swim_{ctx.Update.Message.From.Id}";
                     if (!Commander.Cooldowns.TryUse(key, TimeSpan.FromSeconds(5), out var remaining))
                     {
@@ -1014,18 +1015,19 @@ namespace NotEliteBot
             new CommandDefinition
             {
                 Name = "vape_stat",
-                Description = "Cтатистика /VAPE",
+                Description = "Cтатистика /VAPE — Made by t.me/SimplyIgor",
                 Arguments = new() { },
                 Execute = async ctx =>
                 {
+                    MessageManager.AddMessage(ctx.Update.Message.Chat.Id, ctx.Update.Message.MessageId, 15);
                     var allSessions = Memory.Sessions.Values;
                     if (!allSessions.Any(s => s.TotalVAPE > 0))
                     {
                         await MessageManager.SendAsync(
                             ctx.Bot,
                             ctx.Update.Message.Chat.Id,
-                            "Пока что никто не вэйпал",
-                            10,
+                            "Пока что никто не вэйпил",
+                            3,
                             replyToMessageId: ctx.Update.Message.MessageId
                         );
                         return;
@@ -1075,7 +1077,7 @@ namespace NotEliteBot
                     }
 
                     sb.AppendLine();
-                    sb.AppendLine("💨 Топ 10 по общему количеству заплывов:");
+                    sb.AppendLine("💨 Топ 10 по общему количеству затяжек:");
                     for (int i = 0; i < topTotal.Count; i++)
                     {
                         try
@@ -1113,12 +1115,12 @@ namespace NotEliteBot
                         sb.AppendLine();
                         sb.AppendLine($"Ваши смерти: {currentUser.VAPEDeaths} {GetDeathWord(currentUser.VAPEDeaths)}");
                     }
-
+                    MessageManager.Tick(ctx.Bot, ctx.Update, 5);
                     await MessageManager.SendAsync(
                         ctx.Bot,
                         ctx.Update.Message.Chat.Id,
                         sb.ToString(),
-                        15,
+                        10,
                         replyToMessageId: ctx.Update.Message.MessageId
                     );
                 }

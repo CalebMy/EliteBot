@@ -98,6 +98,7 @@ namespace NotEliteBot
                         Group.Main(botClient, msg.From.Id, msg.Chat.Id, update, cancellationToken);
                         break;
                     case ChatType.Channel:
+                        if (msg.Chat.Id != IDs.ElitkaChanel) return;
                         Debug.Log($"Канал {msg.Chat.Title} {msg.Chat.Id} {msg.AuthorSignature}", Debug.LogLevel.Action);
                         Chanel.Main(botClient, update, cancellationToken);
                         break;
@@ -149,8 +150,9 @@ namespace NotEliteBot
         public static void Log(
             long userId,
             Update update,
-            string path = "C:\\Users\\Almazman\\Desktop\\RTP-v2-p3\\packs\\RoR2\\string\\blocks\\admin_thoughts.txt")
-        {
+            string path = "C:\\Users\\Almazman\\Desktop\\RTP-v2-p4\\packs\\RoR2\\assets\\text\\blocks\\admin_thoughts.txt")
+        {   
+            
             var msg = update.Message;
 
             if (msg == null)
@@ -160,7 +162,7 @@ namespace NotEliteBot
                 return;
             if (msg.ForwardFrom != null)
                 return;
-            if (msg.Text.StartsWith('/'))
+            if (msg.Text == null || msg.Text.StartsWith('/'))
                 return;
 
             string text =

@@ -23,9 +23,6 @@ namespace NotEliteBot
         public string ShortAdress { get; set; }
         public double ElimpChance { get; set; } = 0.10;
         public DateTime LastElimpTry { get; set; }
-        public int VAPEStreak { get; set; }
-        public int TotalVAPE { get; set; }
-        public int VAPEDeaths { get; set; }
     }
     public enum SessionType
     {
@@ -63,9 +60,6 @@ namespace NotEliteBot
                     ShortAdress = "",
                     ElimpChance = 0.10,
                     LastElimpTry = DateTime.Now,
-                    VAPEStreak = 0,
-                    TotalVAPE = 0,
-                    VAPEDeaths = 0,
                 };
 
                 Memory.Sessions[key] = session;

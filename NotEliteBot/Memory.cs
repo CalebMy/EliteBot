@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using static NotEliteBot.Chanel;
 using static NotEliteBot.Dto;
-using static NotEliteBot.Memory;
 
 namespace NotEliteBot
 {
@@ -25,6 +24,7 @@ namespace NotEliteBot
         public static Dictionary<string, long> ChatAddresses = new();
         public static List<ChannelPostInfo> PostStorage = new();
         public static List<string> BanWords = new();
+        public static Dictionary<long, VapeData> VapeStats = new();
         public static void SaveAll(string dir = "memory")
         {
             Directory.CreateDirectory(dir);
@@ -46,6 +46,7 @@ namespace NotEliteBot
             SaveToFile(Path.Combine(dir, "adresses.json"), ChatAddresses);
             SaveToFile(Path.Combine(dir, "posts.json"), PostStorage);
             SaveToFile(Path.Combine(dir, "banwords.json"), BanWords);
+            SaveToFile(Path.Combine(dir, "vapestats.json"), VapeStats);
 
         }
         public static void LoadAll(string dir = "memory")
@@ -67,6 +68,7 @@ namespace NotEliteBot
             ChatAddresses = LoadFromFile<Dictionary<string, long>>(Path.Combine(dir, "adresses.json")) ?? new();
             PostStorage = LoadFromFile<List<ChannelPostInfo>>(Path.Combine(dir, "posts.json")) ?? new();
             BanWords = LoadFromFile<List<string>>(Path.Combine(dir, "banwords.json")) ?? new();
+            VapeStats = LoadFromFile<Dictionary<long, VapeData>>(Path.Combine(dir, "vapestats.json")) ?? new();
         }
 
     }
